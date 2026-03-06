@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transfer — NovaPay</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="main-content">
+      <div class="page-header">
+        <h1 class="page-title">Send Money</h1>
+        <p class="page-subtitle">Transfer between your accounts or to another NovaPay user</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <!-- Transfer form -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">New Transfer</h2>
+          </div>
+
+          <div id="alert" class="alert"></div>
+
+          <form id="transferForm">
+            <div class="form-group">
+              <label class="form-label" for="fromAccount">From account</label>
+              <select id="fromAccount" name="fromAccount" class="form-select" required>
+                <option value="">Select source account</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="toAccount">To account</label>
+              <select id="toAccount" name="toAccount" class="form-select" required>
+                <option value="">Select destination account</option>
+              </select>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="amount">Amount (USD)</label>
+              <input type="number" id="amount" name="amount" class="form-input" placeholder="0.00" step="0.01" min="0.01" max="50000" required style="font-family:'JetBrains Mono',monospace;font-size:18px;">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="description">Description (optional)</label>
+              <input type="text" id="description" name="description" class="form-input" placeholder="What's this transfer for?">
+            </div>
+
+            <button type="submit" id="submitBtn" class="btn btn-primary btn-block" style="margin-top:8px;">
+              Send Transfer
+            </button>
+          </form>
+        </div>
+
+        <!-- Transfer result / recent transfers -->
+        <div>
+          <div class="card" id="resultCard" style="display:none;margin-bottom:24px;">
+            <div class="card-header">
+              <h2 class="card-title">Transfer Result</h2>
+            </div>
+            <div id="resultBody"></div>
+          </div>
+
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Recent Transfers</h2>
+            </div>
+            <div id="recentTransfers">
+              <p style="color:var(--text-muted);font-size:14px;">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error("Not authenticated");
+    document.getElementById("sidebar").innerHTML = renderSidebar("transfer");
+
+    let allAccounts = [];
+
+    async function loadAccounts() {
+      try {
+        const { accounts } = await api("/api/accounts");
+        allAccounts = accounts;
+
+        const fromSelect = document.getElementById("fromAccount");
+        const toSelect = document.getElementById("toAccount");
+
+        // Clear existing options before repopulating
+        fromSelect.innerHTML = '<option value="">Select source account</option>';
+        toSelect.innerHTML = '<option value="">Select destination account</option>';
+
+        accounts.forEach(acc => {
+          const optFrom = new Option(`${acc.name} (${formatCurrency(acc.balance)})`, acc.id);
+          const optTo = new Option(`${acc.name} (${formatCurrency(acc.balance)})`, acc.id);
+          fromSelect.add(optFrom);
+          toSelect.add(optTo);
+        });
+      } catch (err) {
+        showAlert("alert", "Failed to load accounts");
+      }
+    }
+
+    async function loadRecentTransfers() {
+      try {
+        const { transfers } = await api("/api/transfers");
+        if (transfers.length === 0) {
+          document.getElementById("recentTransfers").innerHTML = `<p style="color:var(--text-muted);font-size:14px;">No transfers yet</p>`;
+          return;
+        }
+
+        document.getElementById("recentTransfers").innerHTML = transfers.slice(0, 10).map(t => `
+          <div style="display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--border);">
+            <div>
+              <div style="font-size:14px;font-weight:500;">${t.from_account_name} → ${t.to_account_name}</div>
+              <div style="font-size:12px;color:var(--text-muted);margin-top:2px;">${formatDateTime(t.created_at)}</div>
+            </div>
+            <div style="text-align:right;">
+              <div class="tx-amount" style="font-size:15px;">${formatCurrency(t.amount)}</div>
+              <span class="tx-status status-${t.status}" style="margin-top:4px;">${t.status}</span>
+            </div>
+          </div>
+        `).join("");
+      } catch (err) {
+        document.getElementById("recentTransfers").innerHTML = `<p style="color:var(--danger);font-size:14px;">Failed to load</p>`;
+      }
+    }
+
+    document.getElementById("transferForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideAlert("alert");
+
+      const btn = document.getElementById("submitBtn");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Processing...';
+
+      try {
+        const data = await api("/api/transfers", {
+          method: "POST",
+          body: JSON.stringify({
+            fromAccountId: document.getElementById("fromAccount").value,
+            toAccountId: document.getElementById("toAccount").value,
+            amount: parseFloat(document.getElementById("amount").value),
+            description: document.getElementById("description").value || undefined,
+          }),
+        });
+
+        showAlert("alert", "Transfer completed successfully!", "success");
+
+        // Show result card with vendor metrics
+        document.getElementById("resultCard").style.display = "block";
+        const vm = data.vendorMetrics;
+        document.getElementById("resultBody").innerHTML = `
+          <div style="margin-bottom:16px;">
+            <div style="font-size:13px;color:var(--text-muted);margin-bottom:4px;">Amount</div>
+            <div style="font-size:24px;font-weight:700;font-family:'JetBrains Mono',monospace;color:var(--success);">${formatCurrency(data.transfer.amount)}</div>
+          </div>
+          <div style="font-size:13px;color:var(--text-muted);margin-bottom:8px;">Vendor Response Times</div>
+          <div style="display:grid;gap:8px;">
+            <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--bg-input);border-radius:6px;">
+              <span style="font-size:13px;">Fraud Check</span>
+              <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:${vm.fraudCheck.latencyMs > 500 ? 'var(--warning)' : 'var(--success)'};">${vm.fraudCheck.latencyMs}ms</span>
+            </div>
+            ${vm.paymentGateway ? `
+              <div style="display:flex;justify-content:space-between;padding:8px 12px;background:var(--bg-input);border-radius:6px;">
+                <span style="font-size:13px;">Payment Gateway</span>
+                <span style="font-family:'JetBrains Mono',monospace;font-size:13px;color:${vm.paymentGateway.latencyMs > 500 ? 'var(--warning)' : 'var(--success)'};">${vm.paymentGateway.latencyMs}ms</span>
+              </div>
+            ` : ''}
+          </div>
+        `;
+
+        // Refresh accounts and transfers
+        loadAccounts();
+        loadRecentTransfers();
+      } catch (err) {
+        showAlert("alert", err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Send Transfer";
+      }
+    });
+
+    loadAccounts();
+    loadRecentTransfers();
+  </script>
+</body>
+</html>

@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile — NovaPay</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="main-content">
+      <div class="page-header">
+        <h1 class="page-title">Profile & Settings</h1>
+        <p class="page-subtitle">Manage your personal information</p>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;">
+        <!-- Profile form -->
+        <div class="card">
+          <div class="card-header">
+            <h2 class="card-title">Personal Information</h2>
+          </div>
+
+          <div id="profileAlert" class="alert"></div>
+
+          <form id="profileForm">
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="firstName">First name</label>
+                <input type="text" id="firstName" name="firstName" class="form-input" required>
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="lastName">Last name</label>
+                <input type="text" id="lastName" name="lastName" class="form-input" required>
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="email">Email address</label>
+              <input type="email" id="email" class="form-input" disabled style="opacity:0.6;">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="phone">Phone number</label>
+              <input type="tel" id="phone" name="phone" class="form-input">
+            </div>
+
+            <div class="form-group">
+              <label class="form-label" for="address">Street address</label>
+              <input type="text" id="address" name="address" class="form-input">
+            </div>
+
+            <div class="form-row">
+              <div class="form-group">
+                <label class="form-label" for="city">City</label>
+                <input type="text" id="city" name="city" class="form-input">
+              </div>
+              <div class="form-group">
+                <label class="form-label" for="zipCode">ZIP code</label>
+                <input type="text" id="zipCode" name="zipCode" class="form-input">
+              </div>
+            </div>
+
+            <button type="submit" id="saveBtn" class="btn btn-primary btn-block">
+              Save Changes
+            </button>
+          </form>
+        </div>
+
+        <div>
+          <!-- KYC Status -->
+          <div class="card" style="margin-bottom:24px;">
+            <div class="card-header">
+              <h2 class="card-title">Verification Status</h2>
+            </div>
+            <div id="kycStatus">
+              <p style="color:var(--text-muted);">Loading...</p>
+            </div>
+          </div>
+
+          <!-- Notifications -->
+          <div class="card">
+            <div class="card-header">
+              <h2 class="card-title">Notifications</h2>
+              <span id="unreadBadge" style="background:var(--accent);color:white;padding:2px 8px;border-radius:12px;font-size:12px;font-weight:600;display:none;"></span>
+            </div>
+            <div id="notificationsList">
+              <p style="color:var(--text-muted);">Loading...</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error("Not authenticated");
+    document.getElementById("sidebar").innerHTML = renderSidebar("profile");
+
+    async function loadProfile() {
+      try {
+        const profile = await api("/api/user/profile");
+
+        document.getElementById("firstName").value = profile.first_name || "";
+        document.getElementById("lastName").value = profile.last_name || "";
+        document.getElementById("email").value = profile.email || "";
+        document.getElementById("phone").value = profile.phone || "";
+        document.getElementById("address").value = profile.address || "";
+        document.getElementById("city").value = profile.city || "";
+        document.getElementById("zipCode").value = profile.zip_code || "";
+
+        // KYC status
+        const kycVerified = !!profile.kyc_verified;
+        document.getElementById("kycStatus").innerHTML = `
+          <div style="display:flex;align-items:center;gap:12px;margin-bottom:16px;">
+            <div style="width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+              background:${kycVerified ? 'var(--success-bg)' : 'var(--warning-bg)'}; color:${kycVerified ? 'var(--success)' : 'var(--warning)'};">
+              ${kycVerified ? '✓' : '!'}
+            </div>
+            <div>
+              <div style="font-weight:600;font-size:14px;">${kycVerified ? 'Verified' : 'Pending Verification'}</div>
+              <div style="font-size:12px;color:var(--text-muted);">${kycVerified ? 'Your identity has been verified' : 'Complete KYC to unlock all features'}</div>
+            </div>
+          </div>
+          ${!kycVerified ? `
+            <button onclick="runKycVerification()" id="kycBtn" class="btn btn-primary btn-block" style="font-size:13px;">
+              Start KYC Verification
+            </button>
+          ` : ''}
+        `;
+      } catch (err) {
+        showAlert("profileAlert", err.message);
+      }
+    }
+
+    async function loadNotifications() {
+      try {
+        const { notifications, unreadCount } = await api("/api/user/notifications");
+
+        if (unreadCount > 0) {
+          const badge = document.getElementById("unreadBadge");
+          badge.textContent = unreadCount;
+          badge.style.display = "inline";
+        }
+
+        if (notifications.length === 0) {
+          document.getElementById("notificationsList").innerHTML = `<p style="color:var(--text-muted);font-size:14px;">No notifications</p>`;
+          return;
+        }
+
+        document.getElementById("notificationsList").innerHTML = notifications.map(n => `
+          <div style="display:flex;gap:12px;padding:12px 0;border-bottom:1px solid var(--border);opacity:${n.read ? '0.6' : '1'};" onclick="markRead('${n.id}', this)">
+            <div style="flex:1;cursor:pointer;">
+              <div style="font-size:13px;font-weight:${n.read ? '400' : '600'};margin-bottom:2px;">${n.title}</div>
+              <div style="font-size:12px;color:var(--text-muted);">${n.message}</div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">${formatDateTime(n.created_at)}</div>
+            </div>
+            ${!n.read ? '<div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:4px;"></div>' : ''}
+          </div>
+        `).join("");
+      } catch (err) {
+        document.getElementById("notificationsList").innerHTML = `<p style="color:var(--danger);font-size:14px;">Failed to load</p>`;
+      }
+    }
+
+    async function markRead(id, el) {
+      try {
+        await api(`/api/user/notifications/${id}/read`, { method: "PUT" });
+        el.style.opacity = "0.6";
+        const dot = el.querySelector('div:last-child');
+        if (dot && dot.style.background) dot.remove();
+      } catch (e) {}
+    }
+
+    async function runKycVerification() {
+      const btn = document.getElementById("kycBtn");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Verifying...';
+
+      try {
+        const result = await api("/api/vendors/kyc-verify", {
+          method: "POST",
+          body: JSON.stringify({ userId: getUser().id, documentType: "passport" }),
+        });
+
+        if (result.data.verified) {
+          showAlert("profileAlert", `KYC verification passed (${result.latencyMs}ms) — Confidence: ${result.data.confidence}%`, "success");
+        } else {
+          showAlert("profileAlert", `KYC verification needs review (${result.latencyMs}ms)`, "warning");
+        }
+
+        loadProfile();
+      } catch (err) {
+        showAlert("profileAlert", `KYC verification failed: ${err.message}`);
+        btn.disabled = false;
+        btn.textContent = "Start KYC Verification";
+      }
+    }
+
+    document.getElementById("profileForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideAlert("profileAlert");
+
+      const btn = document.getElementById("saveBtn");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Saving...';
+
+      try {
+        await api("/api/user/profile", {
+          method: "PUT",
+          body: JSON.stringify({
+            firstName: document.getElementById("firstName").value,
+            lastName: document.getElementById("lastName").value,
+            phone: document.getElementById("phone").value,
+            address: document.getElementById("address").value,
+            city: document.getElementById("city").value,
+            zipCode: document.getElementById("zipCode").value,
+          }),
+        });
+
+        showAlert("profileAlert", "Profile updated successfully!", "success");
+      } catch (err) {
+        showAlert("profileAlert", err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "Save Changes";
+      }
+    });
+
+    loadProfile();
+    loadNotifications();
+  </script>
+</body>
+</html>

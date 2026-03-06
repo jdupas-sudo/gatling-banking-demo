@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard — NovaPay</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="main-content">
+      <div class="page-header">
+        <h1 class="page-title" id="greeting">Good morning</h1>
+        <p class="page-subtitle">Here's your financial overview</p>
+      </div>
+
+      <div class="summary-bar" id="summaryBar"></div>
+
+      <div class="card-header" style="margin-bottom:20px;">
+        <h2 class="card-title">Your Accounts</h2>
+        <a href="/transfer" class="btn btn-primary" style="font-size:13px;padding:8px 16px;">New Transfer</a>
+      </div>
+
+      <div class="accounts-grid" id="accountsGrid">
+        <div style="padding:40px;text-align:center;color:var(--text-muted);">
+          <span class="spinner" style="width:24px;height:24px;"></span>
+          <p style="margin-top:12px;">Loading accounts...</p>
+        </div>
+      </div>
+
+      <div class="card" id="recentTransactions" style="display:none;">
+        <div class="card-header">
+          <h2 class="card-title">Recent Transactions</h2>
+        </div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th style="text-align:right;">Amount</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="txBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error("Not authenticated");
+
+    document.getElementById("sidebar").innerHTML = renderSidebar("dashboard");
+
+    // Set greeting based on time
+    const hour = new Date().getHours();
+    const user = getUser();
+    const greetingText = hour < 12 ? "Good morning" : hour < 17 ? "Good afternoon" : "Good evening";
+    document.getElementById("greeting").textContent = `${greetingText}, ${user?.firstName || "there"}`;
+
+    async function loadDashboard() {
+      try {
+        const { accounts, summary } = await api("/api/accounts");
+
+        // Render summary
+        const totalAssets = accounts.filter(a => a.balance > 0).reduce((s, a) => s + a.balance, 0);
+        const totalDebt = accounts.filter(a => a.balance < 0).reduce((s, a) => s + Math.abs(a.balance), 0);
+
+        document.getElementById("summaryBar").innerHTML = `
+          <div class="summary-item">
+            <div class="summary-label">Net Worth</div>
+            <div class="summary-value" style="color:var(--success)">${formatCurrency(summary.totalBalance)}</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Total Assets</div>
+            <div class="summary-value">${formatCurrency(totalAssets)}</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Total Debt</div>
+            <div class="summary-value" style="color:${totalDebt > 0 ? 'var(--danger)' : 'var(--text-primary)'}">${formatCurrency(totalDebt)}</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Accounts</div>
+            <div class="summary-value">${summary.accountCount}</div>
+          </div>
+        `;
+
+        // Render account cards
+        if (accounts.length === 0) {
+          document.getElementById("accountsGrid").innerHTML = `
+            <div style="padding:40px;text-align:center;color:var(--text-muted);grid-column:1/-1;">
+              <p>No accounts yet. Contact support to open an account.</p>
+            </div>
+          `;
+          return;
+        }
+
+        document.getElementById("accountsGrid").innerHTML = accounts.map(acc => `
+          <a href="/accounts/${acc.id}" class="account-card">
+            <span class="account-type-badge badge-${acc.type}">${acc.type}</span>
+            <div class="account-name">${acc.name}</div>
+            <div class="account-balance ${acc.balance >= 0 ? 'balance-positive' : 'balance-negative'}">
+              ${formatCurrency(Math.abs(acc.balance))}
+            </div>
+            <div class="account-meta">
+              <span>${acc.currency}</span>
+              ${acc.credit_limit ? `<span>Limit: ${formatCurrency(acc.credit_limit)}</span>` : ''}
+              ${acc.interest_rate ? `<span>APY: ${(acc.interest_rate * 100).toFixed(1)}%</span>` : ''}
+            </div>
+          </a>
+        `).join("");
+
+        // Load recent transactions from the first account
+        if (accounts.length > 0) {
+          const { transactions } = await api(`/api/accounts/${accounts[0].id}/transactions?limit=10`);
+          if (transactions.length > 0) {
+            document.getElementById("recentTransactions").style.display = "block";
+            document.getElementById("txBody").innerHTML = transactions.map(tx => `
+              <tr>
+                <td style="white-space:nowrap;">${formatDateTime(tx.created_at)}</td>
+                <td>${tx.description || '—'}</td>
+                <td><span style="text-transform:capitalize;color:var(--text-muted);font-size:13px;">${tx.category || '—'}</span></td>
+                <td style="text-align:right;" class="tx-amount ${tx.type === 'credit' || tx.type === 'transfer_in' ? 'tx-credit' : 'tx-debit'}">
+                  ${formatCurrency(tx.amount)}
+                </td>
+                <td><span class="tx-status status-${tx.status}">${tx.status}</span></td>
+              </tr>
+            `).join("");
+          }
+        }
+      } catch (err) {
+        document.getElementById("accountsGrid").innerHTML = `
+          <div style="padding:40px;text-align:center;color:var(--danger);grid-column:1/-1;">
+            <p>Failed to load accounts: ${err.message}</p>
+          </div>
+        `;
+      }
+    }
+
+    loadDashboard();
+  </script>
+</body>
+</html>

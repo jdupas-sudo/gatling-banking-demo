@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Account — NovaPay</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="auth-page">
+    <div class="auth-container">
+      <div class="auth-header">
+        <div class="logo-icon">N</div>
+        <h1>Open your account</h1>
+        <p>Start banking with NovaPay in minutes</p>
+      </div>
+
+      <div class="auth-card">
+        <div id="alert" class="alert"></div>
+
+        <form id="registerForm">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="firstName">First name</label>
+              <input type="text" id="firstName" name="firstName" class="form-input" placeholder="Alice" required>
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="lastName">Last name</label>
+              <input type="text" id="lastName" name="lastName" class="form-input" placeholder="Martin" required>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="email">Email address</label>
+            <input type="email" id="email" name="email" class="form-input" placeholder="you@example.com" required>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="phone">Phone number</label>
+            <input type="tel" id="phone" name="phone" class="form-input" placeholder="+1-555-0100">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="address">Street address</label>
+            <input type="text" id="address" name="address" class="form-input" placeholder="123 Main Street">
+          </div>
+
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="city">City</label>
+              <input type="text" id="city" name="city" class="form-input" placeholder="New York">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="zipCode">ZIP code</label>
+              <input type="text" id="zipCode" name="zipCode" class="form-input" placeholder="10001">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="password">Password</label>
+            <input type="password" id="password" name="password" class="form-input" placeholder="Create a strong password" required minlength="6">
+          </div>
+
+          <button type="submit" id="submitBtn" class="btn btn-primary btn-block" style="margin-top:8px;">
+            Create Account
+          </button>
+        </form>
+      </div>
+
+      <div class="auth-footer">
+        Already have an account? <a href="/login">Sign in</a>
+      </div>
+    </div>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    if (getToken()) window.location.href = "/dashboard";
+
+    document.getElementById("registerForm").addEventListener("submit", async (e) => {
+      e.preventDefault();
+      hideAlert("alert");
+
+      const btn = document.getElementById("submitBtn");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="spinner"></span> Creating account...';
+
+      try {
+        const data = await api("/api/auth/register", {
+          method: "POST",
+          body: JSON.stringify({
+            email: document.getElementById("email").value,
+            password: document.getElementById("password").value,
+            firstName: document.getElementById("firstName").value,
+            lastName: document.getElementById("lastName").value,
+            phone: document.getElementById("phone").value,
+            address: document.getElementById("address").value,
+            city: document.getElementById("city").value,
+            zipCode: document.getElementById("zipCode").value,
+          }),
+        });
+
+        setToken(data.token);
+        setUser(data.user);
+        window.location.href = "/dashboard";
+      } catch (err) {
+        showAlert("alert", err.message);
+        btn.disabled = false;
+        btn.textContent = "Create Account";
+      }
+    });
+  </script>
+</body>
+</html>

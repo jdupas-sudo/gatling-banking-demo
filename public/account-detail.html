@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Account — NovaPay</title>
+  <link rel="stylesheet" href="/css/styles.css">
+</head>
+<body>
+  <div class="app-layout">
+    <aside class="sidebar" id="sidebar"></aside>
+    <main class="main-content">
+      <div class="page-header">
+        <p class="page-subtitle"><a href="/dashboard" style="color:var(--accent);text-decoration:none;">&larr; Back to Dashboard</a></p>
+        <h1 class="page-title" id="accountName">Account</h1>
+      </div>
+
+      <div class="summary-bar" id="accountSummary"></div>
+
+      <div class="card">
+        <div class="card-header">
+          <h2 class="card-title">Transaction History</h2>
+        </div>
+
+        <div class="filters-bar">
+          <input type="text" id="searchInput" class="form-input" placeholder="Search transactions..." style="flex:1;min-width:200px;">
+          <select id="typeFilter" class="form-select">
+            <option value="">All types</option>
+            <option value="credit">Credits</option>
+            <option value="debit">Debits</option>
+            <option value="transfer_in">Transfers in</option>
+            <option value="transfer_out">Transfers out</option>
+          </select>
+          <select id="categoryFilter" class="form-select">
+            <option value="">All categories</option>
+            <option value="groceries">Groceries</option>
+            <option value="shopping">Shopping</option>
+            <option value="dining">Dining</option>
+            <option value="fuel">Fuel</option>
+            <option value="utilities">Utilities</option>
+            <option value="entertainment">Entertainment</option>
+            <option value="transport">Transport</option>
+            <option value="health">Health</option>
+            <option value="travel">Travel</option>
+            <option value="income">Income</option>
+            <option value="transfer">Transfer</option>
+          </select>
+        </div>
+
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Description</th>
+                <th>Category</th>
+                <th>Merchant</th>
+                <th style="text-align:right;">Amount</th>
+                <th style="text-align:right;">Balance</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody id="txBody">
+              <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);"><span class="spinner"></span></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <div class="pagination" id="pagination"></div>
+      </div>
+    </main>
+  </div>
+
+  <script src="/js/app.js"></script>
+  <script>
+    if (!requireAuth()) throw new Error("Not authenticated");
+    document.getElementById("sidebar").innerHTML = renderSidebar("dashboard");
+
+    const accountId = window.location.pathname.split("/").pop();
+    let currentPage = 1;
+
+    async function loadAccount() {
+      try {
+        const account = await api(`/api/accounts/${accountId}`);
+        document.getElementById("accountName").textContent = account.name;
+        document.title = `${account.name} — NovaPay`;
+
+        document.getElementById("accountSummary").innerHTML = `
+          <div class="summary-item">
+            <div class="summary-label">Current Balance</div>
+            <div class="summary-value" style="color:${account.balance >= 0 ? 'var(--text-primary)' : 'var(--danger)'}">${formatCurrency(account.balance)}</div>
+          </div>
+          <div class="summary-item">
+            <div class="summary-label">Account Type</div>
+            <div class="summary-value" style="font-size:18px;text-transform:capitalize;">${account.type}</div>
+          </div>
+          ${account.credit_limit ? `
+            <div class="summary-item">
+              <div class="summary-label">Credit Limit</div>
+              <div class="summary-value">${formatCurrency(account.credit_limit)}</div>
+            </div>
+            <div class="summary-item">
+              <div class="summary-label">Available Credit</div>
+              <div class="summary-value" style="color:var(--success)">${formatCurrency(account.credit_limit + account.balance)}</div>
+            </div>
+          ` : ''}
+          ${account.interest_rate ? `
+            <div class="summary-item">
+              <div class="summary-label">Interest Rate</div>
+              <div class="summary-value" style="font-size:18px;">${(account.interest_rate * 100).toFixed(2)}% APY</div>
+            </div>
+          ` : ''}
+        `;
+      } catch (err) {
+        document.getElementById("accountName").textContent = "Account not found";
+      }
+    }
+
+    async function loadTransactions(page = 1) {
+      currentPage = page;
+      const search = document.getElementById("searchInput").value;
+      const type = document.getElementById("typeFilter").value;
+      const category = document.getElementById("categoryFilter").value;
+
+      const params = new URLSearchParams({ page, limit: 20 });
+      if (search) params.set("search", search);
+      if (type) params.set("type", type);
+      if (category) params.set("category", category);
+
+      try {
+        const { transactions, pagination } = await api(`/api/accounts/${accountId}/transactions?${params}`);
+
+        if (transactions.length === 0) {
+          document.getElementById("txBody").innerHTML = `
+            <tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">No transactions found</td></tr>
+          `;
+          document.getElementById("pagination").innerHTML = "";
+          return;
+        }
+
+        document.getElementById("txBody").innerHTML = transactions.map(tx => `
+          <tr>
+            <td style="white-space:nowrap;">${formatDateTime(tx.created_at)}</td>
+            <td>${tx.description || '—'}</td>
+            <td><span style="text-transform:capitalize;color:var(--text-muted);font-size:13px;">${tx.category || '—'}</span></td>
+            <td style="font-size:13px;color:var(--text-secondary);">${tx.merchant || '—'}</td>
+            <td style="text-align:right;" class="tx-amount ${tx.type === 'credit' || tx.type === 'transfer_in' ? 'tx-credit' : 'tx-debit'}">
+              ${formatCurrency(tx.amount)}
+            </td>
+            <td style="text-align:right;font-family:'JetBrains Mono',monospace;font-size:13px;color:var(--text-secondary);">
+              ${formatCurrency(tx.balance_after)}
+            </td>
+            <td><span class="tx-status status-${tx.status}">${tx.status}</span></td>
+          </tr>
+        `).join("");
+
+        // Pagination
+        const { totalPages } = pagination;
+        document.getElementById("pagination").innerHTML = `
+          <button onclick="loadTransactions(${page - 1})" ${page <= 1 ? 'disabled' : ''}>Previous</button>
+          <span class="page-info">Page ${page} of ${totalPages}</span>
+          <button onclick="loadTransactions(${page + 1})" ${page >= totalPages ? 'disabled' : ''}>Next</button>
+        `;
+      } catch (err) {
+        document.getElementById("txBody").innerHTML = `
+          <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--danger);">${err.message}</td></tr>
+        `;
+      }
+    }
+
+    // Debounced search
+    let searchTimer;
+    document.getElementById("searchInput").addEventListener("input", () => {
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => loadTransactions(1), 300);
+    });
+    document.getElementById("typeFilter").addEventListener("change", () => loadTransactions(1));
+    document.getElementById("categoryFilter").addEventListener("change", () => loadTransactions(1));
+
+    loadAccount();
+    loadTransactions();
+  </script>
+</body>
+</html>
