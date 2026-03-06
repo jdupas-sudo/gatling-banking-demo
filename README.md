@@ -2,46 +2,6 @@
 
 A fully functional banking application built for [Gatling](https://gatling.io) load-testing demos. It pairs with the [ecommerce demo](https://github.com/jdupas-sudo/se-ecommerce-demo-gatling-tests) to showcase realistic performance testing scenarios, including vendor latency simulation and chaos engineering presets.
 
-## Project Structure
-
-```
-bankling/
-├── src/
-│   ├── server.js               # Express entry point
-│   ├── db/
-│   │   ├── init.js             # sql.js database wrapper & schema
-│   │   └── seed.js             # Test data seeder (users, accounts, transactions)
-│   ├── middleware/
-│   │   └── auth.js             # JWT authentication & middleware
-│   ├── routes/
-│   │   ├── auth.js             # Login, register, refresh, logout
-│   │   ├── accounts.js         # Accounts, transactions, statements
-│   │   ├── transfers.js        # Money transfers (with vendor calls)
-│   │   ├── user.js             # Profile, beneficiaries, notifications
-│   │   ├── vendors.js          # Direct vendor simulation endpoints
-│   │   └── admin.js            # Health, chaos presets, reseed
-│   └── vendors/
-│       └── simulator.js        # Vendor latency & failure simulation
-├── public/
-│   ├── index.html              # Landing page
-│   ├── login.html              # Login
-│   ├── register.html           # Registration
-│   ├── dashboard.html          # Account dashboard
-│   ├── account-detail.html     # Account transactions & detail
-│   ├── transfer.html           # Money transfer form
-│   ├── profile.html            # User profile & notifications
-│   ├── css/styles.css          # Dark theme stylesheet
-│   └── js/app.js               # Frontend auth, API helpers, rendering
-├── gatling/                    # Gatling load test suite (Java + Maven)
-│   ├── pom.xml
-│   └── src/test/
-│       ├── java/novapay/       # Simulations, chains, endpoints, config
-│       └── resources/          # Feeder data, gatling.conf, logback
-├── Dockerfile
-├── docker-compose.yml
-└── package.json
-```
-
 ## Quick Start
 
 ### Run Locally
@@ -66,126 +26,61 @@ docker compose up --build
 npm run dev
 ```
 
-## Test Accounts
+## What's Inside
+
+NovaPay is a banking app with accounts, transactions, transfers, beneficiaries, and a user profile — all backed by an in-memory SQLite database (sql.js) seeded with realistic test data across 5 users.
+
+The key feature for load testing is the **vendor simulation layer**: every transfer calls simulated external APIs (fraud-check, payment-gateway) that introduce realistic latency distributions and transient failures. An admin API lets you inject chaos at runtime — slow responses, elevated error rates, or full degradation — so you can observe how your load tests react to backend issues.
+
+### Test Accounts
 
 All accounts use the password **`password123`**.
 
-| User             | Email                         | Accounts                                 | KYC |
-|------------------|-------------------------------|------------------------------------------|-----|
-| Alice Martin     | alice.martin@example.com      | Checking ($8,542), Savings ($25k), Credit | Yes |
-| Bob Johnson      | bob.johnson@example.com       | Checking ($3,217), Savings ($5,600)       | Yes |
-| Carol Williams   | carol.williams@example.com    | Checking ($45k), Savings ($150k), Credit  | Yes |
-| Dave Brown       | dave.brown@example.com        | Checking ($520)                           | No  |
-| Emma Davis       | emma.davis@example.com        | Checking ($4,100), Savings ($12k), Credit | Yes |
+| User             | Email                         | Accounts                                 |
+|------------------|-------------------------------|------------------------------------------|
+| Alice Martin     | alice.martin@example.com      | Checking ($8,542), Savings ($25k), Credit |
+| Bob Johnson      | bob.johnson@example.com       | Checking ($3,217), Savings ($5,600)       |
+| Carol Williams   | carol.williams@example.com    | Checking ($45k), Savings ($150k), Credit  |
+| Dave Brown       | dave.brown@example.com        | Checking ($520)                           |
+| Emma Davis       | emma.davis@example.com        | Checking ($4,100), Savings ($12k), Credit |
 
-Each user comes pre-loaded with transactions (8-120 per user), beneficiaries, and notifications.
+Each user comes pre-loaded with transactions (8–120), beneficiaries, and notifications.
 
-## API Reference
+### Vendor Simulation & Chaos Presets
 
-### Authentication
+Four simulated external APIs introduce realistic latency and transient failures during transfers:
 
-| Method | Endpoint              | Description          | Auth |
-|--------|-----------------------|----------------------|------|
-| POST   | `/api/auth/login`     | Login, returns JWT   | No   |
-| POST   | `/api/auth/register`  | Create new user      | No   |
-| POST   | `/api/auth/refresh`   | Refresh JWT token    | Yes  |
-| POST   | `/api/auth/logout`    | Logout (clears cookie) | Yes |
+| Vendor            | Normal (ms) | Degraded (ms)  | Error % |
+|-------------------|-------------|----------------|---------|
+| `fraud-check`     | 30–120      | 800–2,500      | 2%      |
+| `credit-score`    | 80–200      | 1,000–3,000    | 3%      |
+| `payment-gateway` | 50–180      | 600–2,000      | 4%      |
+| `kyc-verify`      | 200–500     | 2,000–5,000    | 5%      |
 
-### Accounts & Transactions
-
-| Method | Endpoint                                    | Description                        | Auth |
-|--------|---------------------------------------------|------------------------------------|------|
-| GET    | `/api/accounts`                             | List all user accounts             | Yes  |
-| GET    | `/api/accounts/:id`                         | Account detail                     | Yes  |
-| GET    | `/api/accounts/:id/transactions`            | Paginated transactions             | Yes  |
-| GET    | `/api/accounts/:id/transactions?category=X` | Filter by category                 | Yes  |
-| GET    | `/api/accounts/:id/statements`              | Monthly statements                 | Yes  |
-
-### Transfers
-
-| Method | Endpoint          | Description                              | Auth |
-|--------|-------------------|------------------------------------------|------|
-| POST   | `/api/transfers`  | Create transfer (calls fraud + payment)  | Yes  |
-| GET    | `/api/transfers`  | List user's transfers                    | Yes  |
-
-Transfers call simulated vendor APIs (fraud-check, payment-gateway) with realistic latency distributions.
-
-### User Profile
-
-| Method | Endpoint                              | Description              | Auth |
-|--------|---------------------------------------|--------------------------|------|
-| GET    | `/api/user/profile`                   | Get profile              | Yes  |
-| PUT    | `/api/user/profile`                   | Update profile (partial) | Yes  |
-| GET    | `/api/user/beneficiaries`             | List beneficiaries       | Yes  |
-| POST   | `/api/user/beneficiaries`             | Add beneficiary          | Yes  |
-| DELETE | `/api/user/beneficiaries/:id`         | Remove beneficiary       | Yes  |
-| GET    | `/api/user/notifications`             | List notifications       | Yes  |
-| PUT    | `/api/user/notifications/:id/read`    | Mark as read             | Yes  |
-
-### Admin (no auth required)
-
-| Method | Endpoint                        | Description                        |
-|--------|---------------------------------|------------------------------------|
-| GET    | `/api/admin/status`             | Health check & database stats      |
-| GET    | `/api/admin/vendors`            | Current vendor configs & overrides |
-| POST   | `/api/admin/vendors/configure`  | Set vendor overrides               |
-| POST   | `/api/admin/vendors/reset`      | Reset vendors to defaults          |
-| POST   | `/api/admin/chaos`              | Apply a chaos preset               |
-| POST   | `/api/admin/seed`               | Reseed the database                |
-
-## Vendor Simulation
-
-Four simulated external APIs introduce realistic latency distributions and transient failures during transfers:
-
-| Vendor            | Service             | Fast (ms)  | Slow (ms)     | Slow %  | Error % |
-|-------------------|---------------------|------------|---------------|---------|---------|
-| `fraud-check`     | FraudShield API     | 30 - 120   | 800 - 2,500   | 10%     | 2%      |
-| `credit-score`    | CreditBureau API    | 80 - 200   | 1,000 - 3,000 | 8%      | 3%      |
-| `payment-gateway` | PayNet Gateway      | 50 - 180   | 600 - 2,000   | 12%     | 4%      |
-| `kyc-verify`      | IdentityCheck API   | 200 - 500  | 2,000 - 5,000 | 15%     | 5%      |
-
-### Chaos Presets
-
-Inject failure modes at runtime via `POST /api/admin/chaos`:
+Inject failure modes at runtime via the admin API:
 
 ```bash
 # Normal operation
-curl -X POST localhost:3000/api/admin/chaos -H "Content-Type: application/json" \
-  -d '{"preset": "normal"}'
-
-# 3x latency on all vendors
-curl -X POST localhost:3000/api/admin/chaos -H "Content-Type: application/json" \
-  -d '{"preset": "slow"}'
-
-# 2x latency + 10% extra errors
-curl -X POST localhost:3000/api/admin/chaos -H "Content-Type: application/json" \
-  -d '{"preset": "degraded"}'
-
-# Force fraud-check into slow mode
-curl -X POST localhost:3000/api/admin/chaos -H "Content-Type: application/json" \
-  -d '{"preset": "fraud-slow"}'
-
-# Force payment-gateway into slow mode
-curl -X POST localhost:3000/api/admin/chaos -H "Content-Type: application/json" \
-  -d '{"preset": "payment-slow"}'
+curl -X POST localhost:3000/api/admin/chaos \
+  -H "Content-Type: application/json" -d '{"preset": "normal"}'
 
 # Full chaos: 4x latency + 20% errors on everything
-curl -X POST localhost:3000/api/admin/chaos -H "Content-Type: application/json" \
-  -d '{"preset": "chaos"}'
+curl -X POST localhost:3000/api/admin/chaos \
+  -H "Content-Type: application/json" -d '{"preset": "chaos"}'
 ```
 
-| Preset          | Latency Multiplier | Extra Error Rate | Force Slow Vendor |
-|-----------------|-------------------|------------------|-------------------|
-| `normal`        | 1.0x              | 0%               | None              |
-| `slow`          | 3.0x              | 0%               | None              |
-| `degraded`      | 2.0x              | 10%              | None              |
-| `fraud-slow`    | 1.0x              | 0%               | fraud-check       |
-| `payment-slow`  | 1.0x              | 0%               | payment-gateway   |
-| `chaos`         | 4.0x              | 20%              | All               |
+| Preset          | Latency | Extra Errors | Description                        |
+|-----------------|---------|--------------|------------------------------------|
+| `normal`        | 1x      | 0%           | Default operation                  |
+| `slow`          | 3x      | 0%           | All vendors respond slowly         |
+| `degraded`      | 2x      | +10%         | Slow with elevated error rate      |
+| `fraud-slow`    | 1x      | 0%           | Only fraud-check forced slow       |
+| `payment-slow`  | 1x      | 0%           | Only payment-gateway forced slow   |
+| `chaos`         | 4x      | +20%         | Everything slow, high error rate   |
 
 ## Gatling Load Tests
 
-The `gatling/` directory contains a Java + Maven Gatling suite with four simulations.
+The `gatling/` directory contains a Java + Maven Gatling suite with four simulations following the same patterns as the [ecommerce demo](https://github.com/jdupas-sudo/se-ecommerce-demo-gatling-tests).
 
 ### Prerequisites
 
@@ -198,114 +93,99 @@ The `gatling/` directory contains a Java + Maven Gatling suite with four simulat
 ```bash
 cd gatling
 
-# Smoke test (1 user, quick validation)
+# Smoke test — quick validation
 mvn gatling:test -Dgatling.simulationClass=novapay.BasicSimulation
 
-# Full user journey with ramp-up
+# Full user journey — login, browse, transfer
 mvn gatling:test -Dgatling.simulationClass=novapay.BrowseAndTransferSimulation
 
-# Mixed traffic workload
+# Mixed traffic — 50% browsers, 30% transfers, 20% profile
 mvn gatling:test -Dgatling.simulationClass=novapay.MixedWorkloadSimulation
 
-# Raw API throughput
+# Raw API throughput — parallel auth/read/write streams
 mvn gatling:test -Dgatling.simulationClass=novapay.ApiOnlySimulation
 ```
 
-### Simulations Overview
+### Simulations
 
-#### BasicSimulation
-Smoke test — validates infrastructure and API connectivity.
+| Simulation                    | Purpose                              | Injection Model           |
+|-------------------------------|--------------------------------------|---------------------------|
+| `BasicSimulation`             | Smoke test, validates connectivity   | `atOnceUsers`             |
+| `BrowseAndTransferSimulation` | Full user journey with think times   | `rampUsers` over duration |
+| `MixedWorkloadSimulation`     | Weighted traffic mix (browse/transfer/profile) | `rampUsers` over duration |
+| `ApiOnlySimulation`           | Raw API throughput, 3 parallel streams | `constantUsersPerSec`   |
 
-**Flow:** Login &rarr; List accounts &rarr; Account detail &rarr; Paginated transactions
-
-**Injection:** `atOnceUsers(users)` | **Assertion:** 0 failures
-
----
-
-#### BrowseAndTransferSimulation
-Full user journey simulating a realistic frontend session with think times.
-
-**Flow:** Login &rarr; Dashboard &rarr; Browse account (2 pages) &rarr; Statements &rarr; Transfer &rarr; Verify
-
-**Injection:** `rampUsers(users).during(duration)` | **Assertions:** p95 < 800ms, failures < 5%
-
----
-
-#### MixedWorkloadSimulation
-Production-like traffic mix with weighted user behaviors.
-
-| Behavior        | Weight | Actions                                         |
-|-----------------|--------|-------------------------------------------------|
-| Browsers        | 50%    | Dashboard &rarr; Browse with category filter    |
-| Transferors     | 30%    | List accounts &rarr; Create transfer &rarr; Verify |
-| Profile Managers| 20%    | View/update profile &rarr; Notifications        |
-
-**Injection:** `rampUsers(users).during(duration)` | **Assertions:** p95 < 5s, failures < 10%
-
----
-
-#### ApiOnlySimulation
-Raw API throughput with three parallel scenarios at constant rate.
-
-| Scenario   | Rate        | Actions                            |
-|------------|-------------|------------------------------------|
-| Auth       | `rate` /s   | Login                              |
-| Read       | `rate/2` /s | Login &rarr; Accounts &rarr; Transactions |
-| Write      | `rate/5` /s | Login &rarr; Transfer              |
-
-**Injection:** `constantUsersPerSec(rate).during(duration)` | **Assertions:** p99 < 10s, failures < 15%
-
-### Configuration Parameters
+### Configuration
 
 All simulations accept system properties via `-D`:
 
-| Property   | Default | Description                            |
-|------------|---------|----------------------------------------|
-| `baseUrl`  | `http://localhost:3000` | Target application URL    |
-| `users`    | `200`   | Number of virtual users                |
-| `duration` | `60`    | Test duration in seconds               |
-| `rate`     | `5`     | Users per second (ApiOnlySimulation)   |
+| Property   | Default                | Description                          |
+|------------|------------------------|--------------------------------------|
+| `baseUrl`  | `http://localhost:3000`| Target application URL               |
+| `users`    | `200`                  | Number of virtual users              |
+| `duration` | `60`                   | Test duration in seconds             |
+| `rate`     | `5`                    | Users per second (ApiOnlySimulation) |
 
-Example:
 ```bash
 mvn gatling:test -Dgatling.simulationClass=novapay.BrowseAndTransferSimulation \
   -Dusers=50 -Dduration=120 -DbaseUrl=http://staging:3000
 ```
 
-### Architecture
-
-The Gatling project follows the same patterns as the [ecommerce demo](https://github.com/jdupas-sudo/se-ecommerce-demo-gatling-tests):
-
-- **`config/`** — Centralized configuration (`Config.java`) and session key constants (`Keys.java`)
-- **`endpoints/`** — One class per API domain (`AuthEndpoints`, `AccountEndpoints`, `TransferEndpoints`, `UserEndpoints`), each method returns an `HttpRequestActionBuilder`
-- **`grroups/`** — Chain builders that compose endpoints into realistic user flows (`LoginChain`, `BrowseChain`, `TransferChain`, `ProfileChain`)
-- **`resources/data/users.json`** — Circular feeder with the 5 test user credentials
-
-Key patterns:
-- **Feeders** for variable test data (circular user rotation)
-- **Session correlation** — JWT tokens, account IDs, and notification IDs are extracted from responses and reused in subsequent requests
-- **Think times** — Random pauses between actions (2-5s short, 5-10s long)
-- **`exitBlockOnFail()`** — Stops the scenario on first failure instead of continuing with broken state
-- **`doIf` guards** — Conditional execution (e.g., only transfer if a second account exists)
-
 ### Reports
 
-After each run, Gatling generates an HTML report:
+After each run, Gatling generates an HTML report in `gatling/target/gatling/`.
+
+### Code Organization
 
 ```
-gatling/target/gatling/<simulation-timestamp>/index.html
+gatling/src/test/java/novapay/
+├── config/          # Centralized config (base URL, think times, injection defaults)
+├── endpoints/       # One class per API domain, returns HttpRequestActionBuilder
+├── grroups/         # Chain builders composing endpoints into realistic user flows
+├── *Simulation.java # Simulation classes wiring chains + injection profiles
+└── resources/
+    └── data/users.json  # Circular feeder with test user credentials
+```
+
+Key patterns: feeders for variable data, session correlation (JWT tokens, account IDs extracted and reused), think times between actions, `exitBlockOnFail()` to stop on first error, and `doIf` guards for conditional steps.
+
+## Project Structure
+
+```
+bankling/
+├── src/
+│   ├── server.js               # Express entry point (port 3000)
+│   ├── db/
+│   │   ├── init.js             # sql.js database wrapper & schema
+│   │   └── seed.js             # Test data seeder
+│   ├── middleware/
+│   │   └── auth.js             # JWT authentication
+│   ├── routes/
+│   │   ├── auth.js             # Authentication (login, register, refresh, logout)
+│   │   ├── accounts.js         # Accounts, transactions, statements
+│   │   ├── transfers.js        # Transfers (with vendor simulation calls)
+│   │   ├── user.js             # Profile, beneficiaries, notifications
+│   │   ├── vendors.js          # Direct vendor simulation endpoints
+│   │   └── admin.js            # Health, chaos presets, reseed
+│   └── vendors/
+│       └── simulator.js        # Vendor latency & failure simulation engine
+├── public/                     # Frontend (vanilla HTML/CSS/JS, dark theme)
+├── gatling/                    # Gatling load tests (Java 17, Maven)
+├── Dockerfile
+├── docker-compose.yml
+└── package.json
 ```
 
 ## Tech Stack
 
-| Layer     | Technology                                          |
-|-----------|-----------------------------------------------------|
-| Backend   | Node.js, Express 4.21                               |
-| Database  | sql.js 1.11 (SQLite compiled to WebAssembly)        |
-| Auth      | JSON Web Tokens (jsonwebtoken 9.x)                  |
-| Frontend  | Vanilla HTML/CSS/JS (dark theme)                    |
-| Container | Docker, docker compose                              |
-| Testing   | Gatling 3.14.9 (Java 17, Maven)                     |
+| Layer     | Technology                                       |
+|-----------|--------------------------------------------------|
+| Backend   | Node.js, Express 4.21                            |
+| Database  | sql.js 1.11 (SQLite compiled to WebAssembly)     |
+| Auth      | JSON Web Tokens (jsonwebtoken 9.x)               |
+| Frontend  | Vanilla HTML/CSS/JS (dark theme)                  |
+| Container | Docker, docker compose                           |
+| Testing   | Gatling 3.14.9 (Java 17, Maven)                  |
 
 ## License
 
