@@ -4,8 +4,8 @@ import static io.gatling.javaapi.core.CoreDsl.*;
 
 import io.gatling.javaapi.core.ScenarioBuilder;
 import io.gatling.javaapi.core.Simulation;
-import novapay.grroups.BrowseChain;
-import novapay.grroups.LoginChain;
+import novapay.groups.BrowseChain;
+import novapay.groups.LoginChain;
 import novapay.config.Config;
 
 /**

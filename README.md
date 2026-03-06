@@ -108,12 +108,13 @@ mvn gatling:test -Dgatling.simulationClass=novapay.ApiOnlySimulation
 
 ### Simulations
 
-| Simulation                    | Purpose                              | Injection Model           |
-|-------------------------------|--------------------------------------|---------------------------|
-| `BasicSimulation`             | Smoke test, validates connectivity   | `atOnceUsers`             |
-| `BrowseAndTransferSimulation` | Full user journey with think times   | `rampUsers` over duration |
-| `MixedWorkloadSimulation`     | Weighted traffic mix (browse/transfer/profile) | `rampUsers` over duration |
-| `ApiOnlySimulation`           | Raw API throughput, 3 parallel streams | `constantUsersPerSec`   |
+**BasicSimulation** — Smoke test that validates infrastructure and API connectivity. Each virtual user logs in, lists their accounts, opens one account, and paginates through transactions. Injects all users at once and asserts zero failures — useful as a quick sanity check before heavier runs.
+
+**BrowseAndTransferSimulation** — Simulates a complete banking session the way a real user would: log in, browse the dashboard, paginate through account transactions, check monthly statements, then execute a money transfer and verify it went through. Includes realistic think times between each step. Users ramp up gradually over the configured duration.
+
+**MixedWorkloadSimulation** — Models production-like traffic where different users do different things. After logging in, each virtual user is randomly assigned one of three behaviors: browsing accounts and filtering transactions (50%), making a transfer (30%), or managing their profile and notifications (20%). This creates a realistic mix of read-heavy and write-heavy load.
+
+**ApiOnlySimulation** — Pure API throughput test with no think times or browser simulation. Runs three parallel scenarios at constant rate: authentication calls, read operations (accounts + transactions), and write operations (transfers with vendor latency). Good for finding raw capacity limits and backend bottlenecks.
 
 ### Configuration
 

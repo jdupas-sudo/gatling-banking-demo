@@ -1,4 +1,4 @@
-package novapay.grroups;
+package novapay.groups;
 
 import static io.gatling.javaapi.core.CoreDsl.*;
 

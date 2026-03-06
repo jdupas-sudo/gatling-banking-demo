@@ -4,9 +4,9 @@ import static io.gatling.javaapi.core.CoreDsl.*;
 
 import io.gatling.javaapi.core.ScenarioBuilder;
 import io.gatling.javaapi.core.Simulation;
-import novapay.grroups.BrowseChain;
-import novapay.grroups.LoginChain;
-import novapay.grroups.TransferChain;
+import novapay.groups.BrowseChain;
+import novapay.groups.LoginChain;
+import novapay.groups.TransferChain;
 import novapay.config.Config;
 
 /**
@@ -28,35 +28,35 @@ import novapay.config.Config;
  */
 public class ApiOnlySimulation extends Simulation {
 
-    private final ScenarioBuilder authScenario = scenario("API - Auth")
-            .exec(LoginChain.login())
-            .pause(1);
+        private final ScenarioBuilder authScenario = scenario("API - Auth")
+                        .exec(LoginChain.login())
+                        .pause(1);
 
-    private final ScenarioBuilder readScenario = scenario("API - Read")
-            .exitBlockOnFail()
-            .on(
-                    exec(LoginChain.login())
-                            .exec(BrowseChain.viewDashboard())
-                            .pause(1)
-                            .exec(BrowseChain.browseAccount()));
+        private final ScenarioBuilder readScenario = scenario("API - Read")
+                        .exitBlockOnFail()
+                        .on(
+                                        exec(LoginChain.login())
+                                                        .exec(BrowseChain.viewDashboard())
+                                                        .pause(1)
+                                                        .exec(BrowseChain.browseAccount()));
 
-    private final ScenarioBuilder writeScenario = scenario("API - Write")
-            .exitBlockOnFail()
-            .on(
-                    exec(LoginChain.login())
-                            .exec(TransferChain.executeTransfer()));
+        private final ScenarioBuilder writeScenario = scenario("API - Write")
+                        .exitBlockOnFail()
+                        .on(
+                                        exec(LoginChain.login())
+                                                        .exec(TransferChain.executeTransfer()));
 
-    {
-        setUp(
-                authScenario.injectOpen(
-                        constantUsersPerSec(Config.RATE).during(Config.DURATION)),
-                readScenario.injectOpen(
-                        constantUsersPerSec(Config.RATE / 2.0).during(Config.DURATION)),
-                writeScenario.injectOpen(
-                        constantUsersPerSec(Config.RATE / 5.0).during(Config.DURATION)))
-                .protocols(Config.HTTP_PROTOCOL)
-                .assertions(
-                        global().responseTime().percentile(99.0).lt(10000),
-                        global().failedRequests().percent().lt(15.0));
-    }
+        {
+                setUp(
+                                authScenario.injectOpen(
+                                                constantUsersPerSec(Config.RATE).during(Config.DURATION)),
+                                readScenario.injectOpen(
+                                                constantUsersPerSec(Config.RATE / 2.0).during(Config.DURATION)),
+                                writeScenario.injectOpen(
+                                                constantUsersPerSec(Config.RATE / 5.0).during(Config.DURATION)))
+                                .protocols(Config.HTTP_PROTOCOL)
+                                .assertions(
+                                                global().responseTime().percentile(99.0).lt(10000),
+                                                global().failedRequests().percent().lt(15.0));
+        }
 }

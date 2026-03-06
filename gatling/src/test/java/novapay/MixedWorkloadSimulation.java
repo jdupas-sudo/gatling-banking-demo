@@ -4,10 +4,10 @@ import static io.gatling.javaapi.core.CoreDsl.*;
 
 import io.gatling.javaapi.core.ScenarioBuilder;
 import io.gatling.javaapi.core.Simulation;
-import novapay.grroups.BrowseChain;
-import novapay.grroups.LoginChain;
-import novapay.grroups.ProfileChain;
-import novapay.grroups.TransferChain;
+import novapay.groups.BrowseChain;
+import novapay.groups.LoginChain;
+import novapay.groups.ProfileChain;
+import novapay.groups.TransferChain;
 import novapay.config.Config;
 
 /**
@@ -26,32 +26,35 @@ import novapay.config.Config;
  */
 public class MixedWorkloadSimulation extends Simulation {
 
-    private final ScenarioBuilder scenario = scenario("Mixed Workload")
-            .exitBlockOnFail()
-            .on(
-                    exec(LoginChain.login())
-                            .pause(Config.THINK_MIN, Config.THINK_MAX)
-                            .randomSwitch()
-                            .on(
-                                    percent(50.0)
-                                            .then(
-                                                    exec(BrowseChain.viewDashboard())
-                                                            .pause(
-                                                                    Config.THINK_MIN,
-                                                                    Config.THINK_MAX)
-                                                            .exec(BrowseChain.browseWithFilter())),
-                                    percent(30.0)
-                                            .then(exec(TransferChain.executeTransfer())),
-                                    percent(20.0)
-                                            .then(exec(ProfileChain.manageProfile()))));
+        private final ScenarioBuilder scenario = scenario("Mixed Workload")
+                        .exitBlockOnFail()
+                        .on(
+                                        exec(LoginChain.login())
+                                                        .pause(Config.THINK_MIN, Config.THINK_MAX)
+                                                        .randomSwitch()
+                                                        .on(
+                                                                        percent(50.0)
+                                                                                        .then(
+                                                                                                        exec(BrowseChain.viewDashboard())
+                                                                                                                        .pause(
+                                                                                                                                        Config.THINK_MIN,
+                                                                                                                                        Config.THINK_MAX)
+                                                                                                                        .exec(BrowseChain
+                                                                                                                                        .browseWithFilter())),
+                                                                        percent(30.0)
+                                                                                        .then(exec(TransferChain
+                                                                                                        .executeTransfer())),
+                                                                        percent(20.0)
+                                                                                        .then(exec(ProfileChain
+                                                                                                        .manageProfile()))));
 
-    {
-        setUp(
-                scenario.injectOpen(
-                        rampUsers(Config.USERS).during(Config.DURATION)))
-                .protocols(Config.HTTP_PROTOCOL)
-                .assertions(
-                        global().responseTime().percentile(95.0).lt(5000),
-                        global().failedRequests().percent().lt(10.0));
-    }
+        {
+                setUp(
+                                scenario.injectOpen(
+                                                rampUsers(Config.USERS).during(Config.DURATION)))
+                                .protocols(Config.HTTP_PROTOCOL)
+                                .assertions(
+                                                global().responseTime().percentile(95.0).lt(5000),
+                                                global().failedRequests().percent().lt(10.0));
+        }
 }
