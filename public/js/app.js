@@ -113,7 +113,7 @@ function renderSidebar(activePage) {
   return `
     <a href="/dashboard" class="sidebar-logo">
       <div class="logo-icon">N</div>
-      <span class="logo-text">NovaPay</span>
+      <span class="logo-text">GatlingBank</span>
     </a>
     <nav class="sidebar-nav">
       ${nav.map(n => `

@@ -1,11 +1,11 @@
-package novapay.groups;
+package gatlingbank.groups;
 
 import static io.gatling.javaapi.core.CoreDsl.*;
 
 import io.gatling.javaapi.core.ChainBuilder;
-import novapay.config.Config;
-import novapay.config.Keys;
-import novapay.endpoints.UserEndpoints;
+import gatlingbank.config.Config;
+import gatlingbank.config.Keys;
+import gatlingbank.endpoints.UserEndpoints;
 
 public final class ProfileChain {
 

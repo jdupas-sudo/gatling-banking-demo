@@ -3,8 +3,8 @@
 
   <modelVersion>4.0.0</modelVersion>
 
-  <groupId>novapay</groupId>
-  <artifactId>novapay-gatling-tests</artifactId>
+  <groupId>gatlingbank</groupId>
+  <artifactId>gatlingbank-gatling-tests</artifactId>
   <version>3.14.9</version>
 
   <properties>

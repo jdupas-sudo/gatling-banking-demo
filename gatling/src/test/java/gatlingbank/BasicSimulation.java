@@ -1,12 +1,12 @@
-package novapay;
+package gatlingbank;
 
 import static io.gatling.javaapi.core.CoreDsl.*;
 
 import io.gatling.javaapi.core.ScenarioBuilder;
 import io.gatling.javaapi.core.Simulation;
-import novapay.groups.BrowseChain;
-import novapay.groups.LoginChain;
-import novapay.config.Config;
+import gatlingbank.groups.BrowseChain;
+import gatlingbank.groups.LoginChain;
+import gatlingbank.config.Config;
 
 /**
  * Smoke test: Login -> List accounts -> Browse transactions.
@@ -15,7 +15,7 @@ import novapay.config.Config;
  * Validates the test infrastructure and basic API connectivity.
  *
  * <p>
- * Usage: mvn gatling:test -Dgatling.simulationClass=novapay.BasicSimulation
+ * Usage: mvn gatling:test -Dgatling.simulationClass=gatlingbank.BasicSimulation
  */
 public class BasicSimulation extends Simulation {
 

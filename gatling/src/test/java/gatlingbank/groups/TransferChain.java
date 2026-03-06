@@ -1,13 +1,13 @@
-package novapay.groups;
+package gatlingbank.groups;
 
 import static io.gatling.javaapi.core.CoreDsl.*;
 
 import io.gatling.javaapi.core.ChainBuilder;
 import java.util.concurrent.ThreadLocalRandom;
-import novapay.config.Config;
-import novapay.config.Keys;
-import novapay.endpoints.AccountEndpoints;
-import novapay.endpoints.TransferEndpoints;
+import gatlingbank.config.Config;
+import gatlingbank.config.Keys;
+import gatlingbank.endpoints.AccountEndpoints;
+import gatlingbank.endpoints.TransferEndpoints;
 
 public final class TransferChain {
 

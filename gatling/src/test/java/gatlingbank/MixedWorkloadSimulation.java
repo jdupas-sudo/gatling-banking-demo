@@ -1,14 +1,14 @@
-package novapay;
+package gatlingbank;
 
 import static io.gatling.javaapi.core.CoreDsl.*;
 
 import io.gatling.javaapi.core.ScenarioBuilder;
 import io.gatling.javaapi.core.Simulation;
-import novapay.groups.BrowseChain;
-import novapay.groups.LoginChain;
-import novapay.groups.ProfileChain;
-import novapay.groups.TransferChain;
-import novapay.config.Config;
+import gatlingbank.groups.BrowseChain;
+import gatlingbank.groups.LoginChain;
+import gatlingbank.groups.ProfileChain;
+import gatlingbank.groups.TransferChain;
+import gatlingbank.config.Config;
 
 /**
  * Realistic production traffic mix with weighted scenarios.
@@ -21,7 +21,7 @@ import novapay.config.Config;
  *
  * <p>
  * Usage: mvn gatling:test
- * -Dgatling.simulationClass=novapay.MixedWorkloadSimulation -Dusers=20
+ * -Dgatling.simulationClass=gatlingbank.MixedWorkloadSimulation -Dusers=20
  * -Dduration=120
  */
 public class MixedWorkloadSimulation extends Simulation {

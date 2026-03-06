@@ -1,4 +1,4 @@
-# NovaPay Banking Demo
+# GatlingBank Banking Demo
 
 A fully functional banking application built for [Gatling](https://gatling.io) load-testing demos. It pairs with the [ecommerce demo](https://github.com/jdupas-sudo/se-ecommerce-demo-gatling-tests) to showcase realistic performance testing scenarios, including vendor latency simulation and chaos engineering presets.
 
@@ -28,7 +28,7 @@ npm run dev
 
 ## What's Inside
 
-NovaPay is a banking app with accounts, transactions, transfers, beneficiaries, and a user profile — all backed by an in-memory SQLite database (sql.js) seeded with realistic test data across 5 users.
+GatlingBank is a banking app with accounts, transactions, transfers, beneficiaries, and a user profile — all backed by an in-memory SQLite database (sql.js) seeded with realistic test data across 5 users.
 
 The key feature for load testing is the **vendor simulation layer**: every transfer calls simulated external APIs (fraud-check, payment-gateway) that introduce realistic latency distributions and transient failures. An admin API lets you inject chaos at runtime — slow responses, elevated error rates, or full degradation — so you can observe how your load tests react to backend issues.
 
@@ -92,16 +92,16 @@ The `gatling/` directory contains a Java + Maven Gatling suite with four simulat
 cd gatling
 
 # Smoke test — quick validation
-mvn gatling:test -Dgatling.simulationClass=novapay.BasicSimulation
+mvn gatling:test -Dgatling.simulationClass=gatlingbank.BasicSimulation
 
 # Full user journey — login, browse, transfer
-mvn gatling:test -Dgatling.simulationClass=novapay.BrowseAndTransferSimulation
+mvn gatling:test -Dgatling.simulationClass=gatlingbank.BrowseAndTransferSimulation
 
 # Mixed traffic — 50% browsers, 30% transfers, 20% profile
-mvn gatling:test -Dgatling.simulationClass=novapay.MixedWorkloadSimulation
+mvn gatling:test -Dgatling.simulationClass=gatlingbank.MixedWorkloadSimulation
 
 # Raw API throughput — parallel auth/read/write streams
-mvn gatling:test -Dgatling.simulationClass=novapay.ApiOnlySimulation
+mvn gatling:test -Dgatling.simulationClass=gatlingbank.ApiOnlySimulation
 ```
 
 ### Simulations
@@ -126,7 +126,7 @@ All simulations accept system properties via `-D`:
 | `rate`     | `5`                    | Users per second (ApiOnlySimulation) |
 
 ```bash
-mvn gatling:test -Dgatling.simulationClass=novapay.BrowseAndTransferSimulation \
+mvn gatling:test -Dgatling.simulationClass=gatlingbank.BrowseAndTransferSimulation \
   -Dusers=50 -Dduration=120 -DbaseUrl=http://staging:3000
 ```
 
@@ -137,7 +137,7 @@ After each run, Gatling generates an HTML report in `gatling/target/gatling/`.
 ### Code Organization
 
 ```
-gatling/src/test/java/novapay/
+gatling/src/test/java/gatlingbank/
 ├── config/          # Centralized config (base URL, think times, injection defaults)
 ├── endpoints/       # One class per API domain, returns HttpRequestActionBuilder
 ├── grroups/         # Chain builders composing endpoints into realistic user flows

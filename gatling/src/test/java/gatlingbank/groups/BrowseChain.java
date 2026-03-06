@@ -1,10 +1,10 @@
-package novapay.groups;
+package gatlingbank.groups;
 
 import static io.gatling.javaapi.core.CoreDsl.*;
 
 import io.gatling.javaapi.core.ChainBuilder;
-import novapay.config.Config;
-import novapay.endpoints.AccountEndpoints;
+import gatlingbank.config.Config;
+import gatlingbank.endpoints.AccountEndpoints;
 
 public final class BrowseChain {
 

@@ -1,4 +1,4 @@
-package novapay.config;
+package gatlingbank.config;
 
 public final class Keys {
 

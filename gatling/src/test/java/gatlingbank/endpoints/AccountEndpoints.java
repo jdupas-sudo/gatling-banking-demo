@@ -1,10 +1,10 @@
-package novapay.endpoints;
+package gatlingbank.endpoints;
 
 import static io.gatling.javaapi.core.CoreDsl.*;
 import static io.gatling.javaapi.http.HttpDsl.*;
 
 import io.gatling.javaapi.http.HttpRequestActionBuilder;
-import novapay.config.Keys;
+import gatlingbank.config.Keys;
 
 public final class AccountEndpoints {
 

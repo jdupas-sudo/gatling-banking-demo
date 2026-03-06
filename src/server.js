@@ -65,7 +65,7 @@ async function start() {
   await initDb();
   app.listen(PORT, () => {
     console.log(`\n  ╔══════════════════════════════════════════╗`);
-    console.log(`  ║   NovaPay Banking Demo                   ║`);
+    console.log(`  ║   GatlingBank Banking Demo                   ║`);
     console.log(`  ║   Ready for Gatling load testing         ║`);
     console.log(`  ╠══════════════════════════════════════════╣`);
     console.log(`  ║   http://localhost:${PORT}                  ║`);

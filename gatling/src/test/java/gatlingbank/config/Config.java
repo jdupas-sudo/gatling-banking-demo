@@ -1,4 +1,4 @@
-package novapay.config;
+package gatlingbank.config;
 
 import static io.gatling.javaapi.http.HttpDsl.*;
 

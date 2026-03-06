@@ -1,13 +1,13 @@
-package novapay;
+package gatlingbank;
 
 import static io.gatling.javaapi.core.CoreDsl.*;
 
 import io.gatling.javaapi.core.ScenarioBuilder;
 import io.gatling.javaapi.core.Simulation;
-import novapay.groups.BrowseChain;
-import novapay.groups.LoginChain;
-import novapay.groups.TransferChain;
-import novapay.config.Config;
+import gatlingbank.groups.BrowseChain;
+import gatlingbank.groups.LoginChain;
+import gatlingbank.groups.TransferChain;
+import gatlingbank.config.Config;
 
 /**
  * Direct API load testing with multiple concurrent scenarios.
@@ -24,7 +24,7 @@ import novapay.config.Config;
  *
  * <p>
  * Usage: mvn gatling:test
- * -Dgatling.simulationClass=novapay.ApiOnlySimulation -Drate=10 -Dduration=60
+ * -Dgatling.simulationClass=gatlingbank.ApiOnlySimulation -Drate=10 -Dduration=60
  */
 public class ApiOnlySimulation extends Simulation {
 
