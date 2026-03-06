@@ -34,15 +34,13 @@ The key feature for load testing is the **vendor simulation layer**: every trans
 
 ### Test Accounts
 
-All accounts use the password **`password123`**.
-
-| User             | Email                         | Accounts                                 |
-|------------------|-------------------------------|------------------------------------------|
-| Alice Martin     | alice.martin@example.com      | Checking ($8,542), Savings ($25k), Credit |
-| Bob Johnson      | bob.johnson@example.com       | Checking ($3,217), Savings ($5,600)       |
-| Carol Williams   | carol.williams@example.com    | Checking ($45k), Savings ($150k), Credit  |
-| Dave Brown       | dave.brown@example.com        | Checking ($520)                           |
-| Emma Davis       | emma.davis@example.com        | Checking ($4,100), Savings ($12k), Credit |
+| User             | Email                         | Password        | Accounts                                 |
+|------------------|-------------------------------|-----------------|------------------------------------------|
+| Alice Martin     | `alice.martin@example.com`    | `password123`   | Checking ($8,542), Savings ($25k), Credit |
+| Bob Johnson      | `bob.johnson@example.com`     | `password123`   | Checking ($3,217), Savings ($5,600)       |
+| Carol Williams   | `carol.williams@example.com`  | `password123`   | Checking ($45k), Savings ($150k), Credit  |
+| Dave Brown       | `dave.brown@example.com`      | `password123`   | Checking ($520)                           |
+| Emma Davis       | `emma.davis@example.com`      | `password123`   | Checking ($4,100), Savings ($12k), Credit |
 
 Each user comes pre-loaded with transactions (8–120), beneficiaries, and notifications.
 
